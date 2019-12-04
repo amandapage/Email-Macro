@@ -1,0 +1,379 @@
+'START MODULE 1
+
+
+Sub Email()
+
+Dim OutApp As Object
+    Dim OutMail As Object
+    Dim strbody As String
+Set main = ThisWorkbook
+main.Worksheets("UI").Unprotect Password:="Shak"
+main.Worksheets("UI").Cells.CheckSpelling
+main.Worksheets("UI").Protect Password:="Shak"
+
+spell_question = MsgBox("Do you want to continue?", vbQuestion + vbYesNo, "Question")
+
+If spell_question <> vbYes Then GoTo 0
+
+For I = 2 To Application.WorksheetFunction.CountA(main.Worksheets("UI").Range("A:A"))
+    If main.Worksheets("UI").Range("A" & I) = "Yes" Then
+        If ActiveWorkbook.Path <> "" Then
+            Set OutApp = CreateObject("Outlook.Application")
+            Set OutMail = OutApp.CreateItem(olMailItem)
+            
+            
+            strbody = main.Worksheets("UI").Range("D" & I).Text & " " & _
+            main.Worksheets("UI").Range("E" & I).Text & "," & "<br/>" & _
+            "<br/>" & main.Worksheets("UI").Range("G5").Text & _
+            " " & main.Worksheets("UI").Range("F" & I).Text & " " & main.Worksheets("UI").Range("G6").Text & "<br/>" & _
+            "<br/>" & main.Worksheets("UI").Range("G7").Text & "<br/>" & "<br/>" & main.Worksheets("UI").Range("G9").Text & "<br/>"
+            
+            
+            If main.Worksheets("UI").Range("F" & I) <> "" Then
+                msg_subject = main.Worksheets("UI").Range("G3").Text & ": " & _
+                main.Worksheets("UI").Range("F" & I).Text & " task(s)."
+            Else
+                msg_subject = main.Worksheets("UI").Range("G3").Text & "."
+            End If
+            
+            On Error Resume Next
+            With OutMail
+            .Display
+                .To = main.Worksheets("UI").Range("B" & I).Text
+                .CC = main.Worksheets("UI").Range("C" & I).Text
+                .Subject = msg_subject
+                .HTMLBody = strbody & "<br>" & .HTMLBody
+                '.VotingOptions = "Yes;No"
+                'Attachment
+                .Attachments.Add main.Worksheets("UI").Range("G11").Text
+                .Attachments.Add main.Worksheets("UI").Range("G12").Text
+                .Send
+            End With
+    
+                 objMailDocument.CheckGrammar
+                 objMailDocument.CheckSpelling
+           
+            On Error GoTo 0
+    
+            Set OutMail = Nothing
+            Set OutApp = Nothing
+        Else
+            MsgBox "The ActiveWorkbook does not have a path, Save the file first."
+        End If
+    End If
+    
+Next I
+0
+End Sub
+
+
+
+
+
+
+
+
+
+'START MODULe 2
+
+
+
+
+
+
+
+
+
+
+Public Sub ClearWorksheet()
+
+Set main = ThisWorkbook
+lRow = main.Worksheets("UI").Cells(Rows.Count, 2).End(xlUp).Row
+main.Worksheets("UI").Unprotect Password:="Shak"
+
+main.Worksheets("UI").Range("A2:F1000").ClearContents
+main.Worksheets("Names").Cells.ClearContents
+main.Worksheets("Names").Cells.Interior.ColorIndex = xlNone
+
+main.Worksheets("UI").Protect Password:="Shak"
+
+End Sub
+
+Public Sub Email_CurrentWorkBook()
+
+    'Do not forget to change the email ID
+    'before running this code
+    Dim OlApp As Object
+    Dim NewMail As Object
+
+    Set OlApp = CreateObject("Outlook.Application")
+    Set NewMail = OlApp.CreateItem(0)
+
+    On Error Resume Next
+    With NewMail
+        .To = "JorgeCarlos.Gamez@commscope.com"
+        .CC = "Richard.Tiev_Contractor@commscope.com"
+        .BCC = "amanda.page@commscope.com"
+        .Subject = "Latest copy of email macro"
+        .Body = "Attatched is the most recent saved copy of the email macro as a backup."
+        .Attachments.Add ActiveWorkbook.FullName
+        .Send   'or use .Display to show you the email before sending it
+    End With
+    On Error GoTo 0
+
+    Set NewMail = Nothing
+    Set OlApp = Nothing
+    
+End Sub
+
+
+
+
+
+
+
+
+
+
+
+
+'START MODULE 3
+
+
+
+
+
+
+
+
+Dim errorMsg As Boolean
+Dim emailMsg As Boolean
+Dim bAlreadyUsed As Boolean
+
+
+Public Sub TopLevel()
+
+'Set Optimization settings
+    Application.ScreenUpdating = False
+    Application.EnableEvents = False
+    Application.Calculation = xlCalculationManual
+    errorMsg = False
+    emailMsg = False
+    
+    On Error GoTo errhandler
+    'Call Email_CurrentWorkBook
+    
+    Call Rearrange
+    Call FindNames
+    ThisWorkbook.Worksheets("Names").Cells.EntireColumn.AutoFit
+'Reset Macro Optimization Settings
+    Application.EnableEvents = True
+    Application.ScreenUpdating = True
+    Application.Calculation = xlCalculationAutomatic
+        
+    
+    If errorMsg = True Then MsgBox ("Name(s) not found are highlighted yellow. Please update directory.")
+    If emailMsg = True Then MsgBox ("Email(s) not found are highlighted red. Please update directory.")
+    
+    If errorMsg = False And emailMsg = False Then
+        MsgBox ("Completed")
+    End If
+    
+Done:
+    Exit Sub
+errhandler:
+    DisplayError Err.Source, Err.Description, "Module3.TopLevel", Erl
+    
+    
+End Sub
+
+Function GetNumeric(CellRef As String)
+
+Dim StringLength As Integer
+StringLength = Len(CellRef)
+
+For I = 1 To StringLength
+    If IsNumeric(Mid(CellRef, I, 1)) Then Result = Result & Mid(CellRef, I, 1)
+Next I
+
+GetNumeric = Result
+
+End Function
+
+
+Private Sub Rearrange()
+
+On Error GoTo errhandler
+Set main = ThisWorkbook
+lRow = Cells(Rows.Count, 1).End(xlUp).Row
+
+'Separate pasted names by :
+    main.Worksheets("Names").Columns("A:A").Select
+    Selection.TextToColumns Destination:=Range("A1"), DataType:=xlDelimited, _
+        TextQualifier:=xlDoubleQuote, ConsecutiveDelimiter:=False, Tab:=False, _
+        Semicolon:=False, Comma:=False, Space:=False, Other:=True, OtherChar _
+        :=":", FieldInfo:=Array(Array(1, 1), Array(2, 1)), TrailingMinusNumbers:=True
+
+'Separate last name from rest of name
+    main.Worksheets("Names").Columns("B:B").Select
+    Selection.TextToColumns Destination:=Range("B1"), DataType:=xlDelimited, _
+        TextQualifier:=xlDoubleQuote, ConsecutiveDelimiter:=False, Tab:=False, _
+        Semicolon:=False, Comma:=True, Space:=False, Other:=True, OtherChar:= _
+        ":", FieldInfo:=Array(Array(1, 1), Array(2, 1)), TrailingMinusNumbers:=True
+
+'Separate numbers out
+    For a = 1 To lRow
+        main.Worksheets("Names").Cells(a, 4).Value = GetNumeric(main.Worksheets("Names").Cells(a, 3).Value)
+    Next a
+    
+    For b = 1 To lRow
+        If main.Worksheets("Names").Cells(b, 4).Value = 0 Then
+            main.Worksheets("Names").Cells(b, 4).Value = ""
+        End If
+    Next b
+    
+Done:
+    Exit Sub
+errhandler:
+    RaiseError Err.Number, Err.Source, "Module3.Rearrange", Err.Description, Erl
+    
+End Sub
+
+
+Private Sub FindNames()
+
+Set main = ThisWorkbook
+lRowNames = main.Worksheets("Names").Cells(Rows.Count, 1).End(xlUp).Row
+lRowDirectory = main.Worksheets("Directory").Cells(Rows.Count, 1).End(xlUp).Row
+lRowUI = main.Worksheets("UI").Cells(Rows.Count, 2).End(xlUp).Row
+main.Worksheets("UI").Unprotect Password:="Shak"
+
+For e = 1 To lRowNames
+    main.Worksheets("Names").Cells(e, 2).Value = Trim(main.Worksheets("Names").Cells(e, 2).Value)
+    If InStr(1, main.Worksheets("Names").Cells(e, 2).Value, "Please approve", 1) <> 0 Then
+        main.Worksheets("Names").Rows(e).Delete
+        e = e - 1
+    End If
+Next e
+
+On Error GoTo errhandler
+
+For k = 1 To lRowNames
+    For l = 2 To lRowDirectory
+        lName1 = main.Worksheets("Names").Cells(k, 2).Value
+        lName2 = main.Worksheets("Directory").Cells(l, 1).Value
+        If LCase(lName1) = LCase(lName2) And lName1 <> "" Then
+            If Len(main.Worksheets("Directory").Cells(l, 2).Value) > 2 Then
+                fName1 = Left(Trim(main.Worksheets("Names").Cells(k, 3).Value), 3)
+                fName2 = Left(Trim(main.Worksheets("Directory").Cells(l, 2).Value), 3)
+            Else
+                fName1 = Left(Trim(main.Worksheets("Names").Cells(k, 3).Value), 2)
+                fName2 = Left(Trim(main.Worksheets("Directory").Cells(l, 2).Value), 2)
+            End If
+            If LCase(fName1) = LCase(fName2) Then
+                If main.Worksheets("Directory").Cells(l, 3).Value <> "" Then
+                    main.Worksheets("Directory").Cells(l, 3).Copy
+                    main.Worksheets("UI").Cells(lRowUI + 1, 2).PasteSpecial xlPasteValues
+                Else
+                    emailMsg = True
+                    main.Worksheets("Names").Range("A" & k & ":D" & k).Interior.Color = RGB(255, 0, 0)
+                    GoTo nxtK
+                End If
+                main.Worksheets("UI").Cells(lRowUI + 1, 5).Value = main.Worksheets("Directory").Cells(l, 2).Value
+                main.Worksheets("UI").Cells(lRowUI + 1, 4).Value = "Hello"
+                main.Worksheets("UI").Cells(lRowUI + 1, 1).Value = "Yes"
+                main.Worksheets("UI").Cells(lRowUI + 1, 6).Value = main.Worksheets("Names").Cells(k, 4).Value
+                lRowUI = main.Worksheets("UI").Cells(Rows.Count, 2).End(xlUp).Row
+                main.Worksheets("Names").Range("A" & k & ":D" & k).Interior.ColorIndex = xlNone
+                
+                GoTo nxtK
+            Else
+                main.Worksheets("Names").Range("A" & k & ":D" & k).Interior.Color = RGB(255, 255, 0)
+            End If
+        ElseIf lName1 <> "" Then
+            main.Worksheets("Names").Range("A" & k & ":D" & k).Interior.Color = RGB(255, 255, 0)
+        End If
+    Next l
+nxtK:
+Next k
+
+For m = 1 To lRowNames
+    If main.Worksheets("Names").Range("A" & m & ":D" & m).Interior.Color = RGB(255, 255, 0) Then
+        errorMsg = True
+    End If
+Next m
+
+
+main.Worksheets("UI").Protect Password:="Shak"
+
+Done:
+    Exit Sub
+errhandler:
+    RaiseError Err.Number, Err.Source, "Module1.FindNames", Err.Description, Erl
+
+End Sub
+
+
+Public Sub RaiseError(ByVal errorNo As Long _
+                , ByVal src As String _
+                , ByVal proc As String _
+                , ByVal desc As String _
+                , ByVal lineNo As Long)
+
+    Dim strSource As String
+
+    If bAlreadyUsed = False Then
+        If lineNo <> 0 Then
+            strSource = vbNewLine & LINE_NO_TEXT & lineNo & " "
+        End If
+        strSource = strSource & vbNewLine & proc
+        bAlreadyUsed = True
+    Else
+        strSource = src & vbNewLine & proc
+    End If
+
+    Err.Raise errorNo, strSource, desc
+
+End Sub
+
+Public Sub DisplayError(ByVal src As String, ByVal desc As String _
+                    , ByVal sProcname As String, lineNo As Long)
+
+    ' Check If the error happens in topmost sub
+    If bAlreadyUsed = False Then
+        src = IIf(lineNo = 0, "", vbNewLine & LINE_NO_TEXT & lineNo)
+    End If
+
+    Dim sMsg As String
+    sMsg = "The following error occurred: " & vbNewLine & Err.Description _
+                    & vbNewLine & vbNewLine & "Error Location is: "
+    sMsg = sMsg & src & vbNewLine & sProcname
+
+    MsgBox sMsg, Title:="Error"
+    bAlreadyUsed = False
+
+End Sub
+
+
+Public Sub Redo()
+
+Set main = ThisWorkbook
+
+For a = 1 To main.Worksheets("Directory").UsedRange.Rows.Count
+    If main.Worksheets("Directory").Cells(a, 5).Value2 = main.Worksheets("Directory").Cells(a + 1, 5).Value2 Then
+        main.Worksheets("Directory").Cells(a, 8).Value2 = "Redo" & main.Worksheets("Directory").Cells(a, 4).Value2
+    End If
+Next a
+
+While Cells(1, 2).Value <> Cells(9, 2).Value
+    If InStr(1, Cells(1, 2).Value2, "IL") <> 0 Then
+        Cells.Interior.Pattern = xlPatternLightHorizontal
+        Cells.Interior.PsatternColor = RGB(0, 0, 245)
+    End If
+
+Loop
+
+
+End Sub
+
+
